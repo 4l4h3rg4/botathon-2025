@@ -10,18 +10,22 @@ def get_overview():
     """Get high-level metrics for the dashboard."""
     try:
         # Total Volunteers
+        print("Fetching total volunteers...")
         volunteers_response = supabase.table("volunteers").select("id", count="exact", head=True).execute()
         total_volunteers = volunteers_response.count
+        print(f"Total volunteers: {total_volunteers}")
 
         # Active Campaigns (assuming we count all for now, or filter by status if added later)
+        print("Fetching active campaigns...")
         campaigns_response = supabase.table("campaigns").select("id", count="exact", head=True).execute()
         active_campaigns = campaigns_response.count
+        print(f"Active campaigns: {active_campaigns}")
 
         # Messages Sent (from logs or a future messages table)
         # For now, using a placeholder or counting logs of type 'communication'
         # logs_response = supabase.table("logs").select("id", count="exact", head=True).eq("source", "communication").execute()
         messages_sent = 0 # logs_response.count
-
+        
         return jsonify({
             "total_volunteers": total_volunteers,
             "active_campaigns": active_campaigns,
@@ -29,6 +33,9 @@ def get_overview():
             "avg_engagement": 85  # Placeholder
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Error in metrics/overview: {e}")
         return jsonify({"error": str(e)}), 500
 
 @metrics_bp.route("/regions", methods=["GET"])
