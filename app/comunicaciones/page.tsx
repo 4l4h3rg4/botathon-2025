@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Users, Eye, Send, Sparkles, MessageSquare, CheckCircle } from "lucide-react"
-import { volunteers, regions, campaigns } from "@/lib/mock-data"
+import { api } from "@/lib/api"
 
 const messageTemplates = [
   {
@@ -91,14 +91,33 @@ export default function ComunicacionesPage() {
   const [selectedCampaign, setSelectedCampaign] = useState<string>("")
   const [showPreview, setShowPreview] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const [previewVolunteer, setPreviewVolunteer] = useState(volunteers[0])
+  const [volunteers, setVolunteers] = useState<any[]>([])
+  const [previewVolunteer, setPreviewVolunteer] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchVolunteers = async () => {
+      try {
+        const data = await api.volunteers.list()
+        setVolunteers(data)
+        if (data.length > 0) {
+          setPreviewVolunteer(data[0])
+        }
+      } catch (error) {
+        console.error("Failed to fetch volunteers", error)
+      }
+    }
+    fetchVolunteers()
+  }, [])
 
   // Filter volunteers based on selection
   const filteredVolunteers = volunteers.filter((v) => {
-    const matchesRegion = !selectedRegion || v.region === selectedRegion
-    const matchesCampaign = !selectedCampaign || v.campaigns.includes(selectedCampaign)
+    const matchesRegion = !selectedRegion || selectedRegion === "all" || v.region === selectedRegion
+    const matchesCampaign = !selectedCampaign || selectedCampaign === "all" || (v.campaigns && v.campaigns.some((c: any) => c.name === selectedCampaign))
     return matchesRegion && matchesCampaign
   })
+
+  const regions = Array.from(new Set(volunteers.map(v => v.region))).filter(Boolean)
+  const campaigns = Array.from(new Set(volunteers.flatMap(v => v.campaigns ? v.campaigns.map((c: any) => c.name) : []))).filter(Boolean)
 
   const handleTemplateChange = (templateId: string) => {
     const template = messageTemplates.find((t) => t.id === templateId)
@@ -109,21 +128,33 @@ export default function ComunicacionesPage() {
     }
   }
 
-  const replaceVariables = (text: string, volunteer: (typeof volunteers)[0]) => {
+  const replaceVariables = (text: string, volunteer: any) => {
+    if (!volunteer) return text
     return text
       .replace(/{{nombre}}/g, volunteer.name)
       .replace(/{{email}}/g, volunteer.email)
       .replace(/{{region}}/g, volunteer.region)
       .replace(/{{disponibilidad}}/g, volunteer.availability)
-      .replace(/{{campaña}}/g, selectedCampaign || "Teletón 2024")
+      .replace(/{{campaña}}/g, selectedCampaign !== "all" ? selectedCampaign : "Teletón 2024")
   }
 
-  const handleGenerateCommunication = () => {
-    // Simulate sending
-    setShowSuccess(true)
-    setTimeout(() => {
-      setShowSuccess(false)
-    }, 3000)
+  const handleGenerateCommunication = async () => {
+    // Simulate sending via API
+    try {
+      await api.communications.simulate({
+        template_id: selectedTemplate.id,
+        subject: customSubject,
+        content: customContent,
+        segment_id: 0, // Mock segment ID, in real app we'd create a segment first
+        volunteer_ids: filteredVolunteers.map(v => v.id)
+      })
+      setShowSuccess(true)
+      setTimeout(() => {
+        setShowSuccess(false)
+      }, 3000)
+    } catch (error) {
+      console.error("Failed to send communications", error)
+    }
   }
 
   return (
@@ -213,14 +244,14 @@ export default function ComunicacionesPage() {
                     Vista Previa
                   </CardTitle>
                   <Select
-                    value={previewVolunteer.id}
+                    value={previewVolunteer?.id}
                     onValueChange={(id) => {
                       const volunteer = volunteers.find((v) => v.id === id)
                       if (volunteer) setPreviewVolunteer(volunteer)
                     }}
                   >
                     <SelectTrigger className="w-[200px]">
-                      <SelectValue />
+                      <SelectValue placeholder="Seleccionar voluntario" />
                     </SelectTrigger>
                     <SelectContent>
                       {volunteers.map((v) => (
@@ -236,7 +267,7 @@ export default function ComunicacionesPage() {
                 <div className="rounded-lg border border-border bg-card p-6">
                   <div className="mb-4 border-b border-border pb-4">
                     <p className="text-sm text-muted-foreground">Para:</p>
-                    <p className="font-medium">{previewVolunteer.email}</p>
+                    <p className="font-medium">{previewVolunteer?.email || "Seleccione un voluntario"}</p>
                   </div>
                   <div className="mb-4 border-b border-border pb-4">
                     <p className="text-sm text-muted-foreground">Asunto:</p>
@@ -272,7 +303,7 @@ export default function ComunicacionesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas las regiones</SelectItem>
-                      {regions.map((region) => (
+                      {regions.map((region: any) => (
                         <SelectItem key={region} value={region}>
                           {region}
                         </SelectItem>
@@ -289,7 +320,7 @@ export default function ComunicacionesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas las campañas</SelectItem>
-                      {campaigns.map((campaign) => (
+                      {campaigns.map((campaign: any) => (
                         <SelectItem key={campaign} value={campaign}>
                           {campaign}
                         </SelectItem>
@@ -317,7 +348,7 @@ export default function ComunicacionesPage() {
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                         {volunteer.name
                           .split(" ")
-                          .map((n) => n[0])
+                          .map((n: string) => n[0])
                           .join("")}
                       </div>
                       <div className="flex-1 min-w-0">

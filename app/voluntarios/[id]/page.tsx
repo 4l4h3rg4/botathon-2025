@@ -1,13 +1,13 @@
 "use client"
 
-import { use } from "react"
+import { use, useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Clock, Award, FileText, User } from "lucide-react"
-import { volunteers } from "@/lib/mock-data"
 import Link from "next/link"
+import { api } from "@/lib/api"
 
 export default function VolunteerProfilePage({
   params,
@@ -15,9 +15,36 @@ export default function VolunteerProfilePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
-  const volunteer = volunteers.find((v) => v.id === id)
+  const [volunteer, setVolunteer] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  if (!volunteer) {
+  useEffect(() => {
+    const fetchVolunteer = async () => {
+      try {
+        const data = await api.volunteers.get(id)
+        setVolunteer(data)
+      } catch (err) {
+        console.error("Error fetching volunteer:", err)
+        setError(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchVolunteer()
+  }, [id])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <p>Cargando perfil...</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error || !volunteer) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-12">
@@ -68,7 +95,7 @@ export default function VolunteerProfilePage({
                 <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-3xl font-bold text-primary">
                   {volunteer.name
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join("")}
                 </div>
                 <div className="flex-1 space-y-4">
@@ -76,19 +103,13 @@ export default function VolunteerProfilePage({
                     <div className="flex items-center gap-3">
                       <h2 className="text-2xl font-bold text-foreground">{volunteer.name}</h2>
                       <Badge
-                        variant={volunteer.status === "Activo" ? "default" : "secondary"}
-                        className={
-                          volunteer.status === "Activo"
-                            ? "bg-green-100 text-green-800"
-                            : volunteer.status === "Pendiente"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : ""
-                        }
+                        variant="default"
+                        className="bg-green-100 text-green-800"
                       >
-                        {volunteer.status}
+                        Activo
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground">{volunteer.volunteerType}</p>
+                    <p className="text-muted-foreground">Voluntario</p>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
@@ -99,21 +120,21 @@ export default function VolunteerProfilePage({
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-4 w-4 text-primary" />
-                        <span>{volunteer.phone}</span>
+                        <span>{volunteer.phone || "No registrado"}</span>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="h-4 w-4 text-primary" />
                         <span>
-                          {volunteer.city}, {volunteer.region}
+                          {volunteer.region}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-4 w-4 text-primary" />
                         <span>
                           Desde{" "}
-                          {new Date(volunteer.joinDate).toLocaleDateString("es-CL", {
+                          {new Date(volunteer.created_at).toLocaleDateString("es-CL", {
                             year: "numeric",
                             month: "long",
                           })}
@@ -138,11 +159,7 @@ export default function VolunteerProfilePage({
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Horario</p>
-                  <p className="font-medium">{volunteer.availability}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Modalidad</p>
-                  <p className="font-medium">{volunteer.volunteerType}</p>
+                  <p className="font-medium">{volunteer.availability || "No especificada"}</p>
                 </div>
               </div>
             </CardContent>
@@ -161,11 +178,15 @@ export default function VolunteerProfilePage({
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {volunteer.skills.map((skill) => (
-                  <Badge key={skill} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                    {skill}
-                  </Badge>
-                ))}
+                {volunteer.skills && volunteer.skills.length > 0 ? (
+                  volunteer.skills.map((skill: any) => (
+                    <Badge key={skill.id || skill.name} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                      {skill.name}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground italic">Sin habilidades registradas</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -180,33 +201,20 @@ export default function VolunteerProfilePage({
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {volunteer.campaigns.map((campaign) => (
-                  <div key={campaign} className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <span className="font-medium">{campaign}</span>
-                    <Badge variant="outline">Participó</Badge>
-                  </div>
-                ))}
+                {volunteer.campaigns && volunteer.campaigns.length > 0 ? (
+                  volunteer.campaigns.map((campaign: any) => (
+                    <div key={campaign.id || campaign.name} className="flex items-center justify-between rounded-lg border border-border p-3">
+                      <span className="font-medium">{campaign.name}</span>
+                      <Badge variant="outline">Participó</Badge>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground italic">Sin campañas registradas</p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-5 w-5 text-primary" />
-              Notas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {volunteer.notes ? (
-              <p className="text-foreground">{volunteer.notes}</p>
-            ) : (
-              <p className="text-muted-foreground italic">No hay notas registradas para este voluntario.</p>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   )

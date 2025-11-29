@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,9 +12,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Save, X, User } from "lucide-react"
-import { volunteers, regions, skills, campaigns, availabilityOptions, volunteerTypes } from "@/lib/mock-data"
+import { regions, skills, campaigns, availabilityOptions, volunteerTypes } from "@/lib/mock-data"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
 
 export default function EditVolunteerPage({
   params,
@@ -23,25 +24,67 @@ export default function EditVolunteerPage({
 }) {
   const { id } = use(params)
   const router = useRouter()
-  const volunteer = volunteers.find((v) => v.id === id)
 
-  const [formData, setFormData] = useState({
-    name: volunteer?.name || "",
-    email: volunteer?.email || "",
-    phone: volunteer?.phone || "",
-    region: volunteer?.region || "",
-    city: volunteer?.city || "",
-    skills: volunteer?.skills || [],
-    campaigns: volunteer?.campaigns || [],
-    availability: volunteer?.availability || "",
-    volunteerType: volunteer?.volunteerType || "",
-    status: volunteer?.status || "",
-    notes: volunteer?.notes || "",
-  })
-
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  if (!volunteer) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    region: "",
+    city: "",
+    skills: [] as string[],
+    campaigns: [] as string[],
+    availability: "",
+    volunteerType: "",
+    status: "",
+    notes: "",
+  })
+
+  useEffect(() => {
+    const fetchVolunteer = async () => {
+      try {
+        const data = await api.volunteers.get(id)
+        if (data) {
+          setFormData({
+            name: data.name || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            region: data.region || "",
+            city: data.city || "", // Note: DB might not have city column based on previous schema checks, but let's keep it if it's there or empty
+            skills: data.skills ? data.skills.map((s: any) => s.name) : [],
+            campaigns: data.campaigns ? data.campaigns.map((c: any) => c.name) : [],
+            availability: data.availability || "",
+            volunteerType: data.volunteerType || "Presencial", // Default if missing
+            status: data.status || "Activo", // Default if missing
+            notes: data.notes || "",
+          })
+        } else {
+          setError(true)
+        }
+      } catch (err) {
+        console.error("Error fetching volunteer:", err)
+        setError(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchVolunteer()
+  }, [id])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <p>Cargando...</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-12">
@@ -87,10 +130,15 @@ export default function EditVolunteerPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setSaving(false)
-    router.push(`/voluntarios/${id}`)
+    try {
+      await api.volunteers.update(id, formData)
+      router.push(`/voluntarios/${id}`)
+    } catch (err) {
+      console.error("Error updating volunteer:", err)
+      alert("Error al guardar los cambios")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

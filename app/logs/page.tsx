@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,74 +9,85 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, Search, Filter, RefreshCw, CheckCircle, AlertCircle, Info, AlertTriangle, Clock } from "lucide-react"
-import { logs } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
+import { api } from "@/lib/api"
 
-const logTypes = ["Todos", "Sincronización", "Comunicación", "Error", "Segmentación", "Importación", "Warning"]
+const logTypes = ["Todos", "BLUE_PRISM", "SYSTEM", "USER", "API"]
 
 export default function LogsPage() {
   const [filterType, setFilterType] = useState("Todos")
   const [searchTerm, setSearchTerm] = useState("")
   const [dateFilter, setDateFilter] = useState("")
+  const [logs, setLogs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchLogs = async () => {
+    setLoading(true)
+    try {
+      const data = await api.logs.list(filterType !== "Todos" ? { source: filterType } : {})
+      setLogs(data)
+    } catch (error) {
+      console.error("Failed to fetch logs", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchLogs()
+  }, [filterType])
 
   const filteredLogs = logs.filter((log) => {
-    const matchesType = filterType === "Todos" || log.type === filterType
     const matchesSearch = !searchTerm || log.message.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDate = !dateFilter || log.timestamp.includes(dateFilter)
-    return matchesType && matchesSearch && matchesDate
+    const matchesDate = !dateFilter || new Date(log.created_at).toISOString().includes(dateFilter)
+    return matchesSearch && matchesDate
   })
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "success":
+  const getStatusIcon = (level: string) => {
+    switch (level) {
+      case "INFO":
         return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "error":
+      case "ERROR":
         return <AlertCircle className="h-4 w-4 text-destructive" />
-      case "warning":
+      case "WARNING":
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />
-      case "info":
-        return <Info className="h-4 w-4 text-blue-500" />
       default:
         return <Info className="h-4 w-4 text-muted-foreground" />
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "success":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Éxito</Badge>
-      case "error":
+  const getStatusBadge = (level: string) => {
+    switch (level) {
+      case "INFO":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Info</Badge>
+      case "ERROR":
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Error</Badge>
-      case "warning":
+      case "WARNING":
         return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Advertencia</Badge>
-      case "info":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Info</Badge>
       default:
         return <Badge variant="secondary">Desconocido</Badge>
     }
   }
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (source: string) => {
     const colors: Record<string, string> = {
-      Sincronización: "bg-purple-100 text-purple-800",
-      Comunicación: "bg-primary/10 text-primary",
-      Error: "bg-red-100 text-red-800",
-      Segmentación: "bg-blue-100 text-blue-800",
-      Importación: "bg-green-100 text-green-800",
-      Warning: "bg-yellow-100 text-yellow-800",
+      BLUE_PRISM: "bg-purple-100 text-purple-800",
+      SYSTEM: "bg-primary/10 text-primary",
+      USER: "bg-blue-100 text-blue-800",
+      API: "bg-green-100 text-green-800",
     }
 
     return (
-      <Badge variant="outline" className={cn("border-0", colors[type] || "bg-muted")}>
-        {type}
+      <Badge variant="outline" className={cn("border-0", colors[source] || "bg-muted")}>
+        {source}
       </Badge>
     )
   }
 
   // Stats
-  const successCount = logs.filter((l) => l.status === "success").length
-  const errorCount = logs.filter((l) => l.status === "error").length
-  const warningCount = logs.filter((l) => l.status === "warning").length
+  const successCount = logs.filter((l) => l.level === "INFO").length
+  const errorCount = logs.filter((l) => l.level === "ERROR").length
+  const warningCount = logs.filter((l) => l.level === "WARNING").length
 
   return (
     <DashboardLayout>
@@ -87,7 +98,7 @@ export default function LogsPage() {
             <h1 className="text-3xl font-bold text-foreground">Registro de Actividades</h1>
             <p className="text-muted-foreground">Historial de procesos y eventos del sistema</p>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={fetchLogs}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Actualizar
           </Button>
@@ -116,7 +127,7 @@ export default function LogsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{successCount}</p>
-                  <p className="text-sm text-muted-foreground">Exitosos</p>
+                  <p className="text-sm text-muted-foreground">Info</p>
                 </div>
               </div>
             </CardContent>
@@ -173,7 +184,7 @@ export default function LogsPage() {
                 </div>
               </div>
               <div className="w-[200px]">
-                <Label htmlFor="type">Tipo de Proceso</Label>
+                <Label htmlFor="type">Fuente</Label>
                 <Select value={filterType} onValueChange={setFilterType}>
                   <SelectTrigger id="type" className="mt-2">
                     <SelectValue />
@@ -233,21 +244,21 @@ export default function LogsPage() {
                     key={log.id}
                     className={cn(
                       "flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50",
-                      log.status === "error" && "border-l-4 border-l-destructive",
-                      log.status === "warning" && "border-l-4 border-l-yellow-500",
-                      log.status === "success" && "border-l-4 border-l-green-500",
+                      log.level === "ERROR" && "border-l-4 border-l-destructive",
+                      log.level === "WARNING" && "border-l-4 border-l-yellow-500",
+                      log.level === "INFO" && "border-l-4 border-l-green-500",
                     )}
                   >
-                    <div className="mt-1">{getStatusIcon(log.status)}</div>
+                    <div className="mt-1">{getStatusIcon(log.level)}</div>
                     <div className="flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        {getTypeBadge(log.type)}
-                        {getStatusBadge(log.status)}
+                        {getTypeBadge(log.source)}
+                        {getStatusBadge(log.level)}
                       </div>
                       <p className="text-foreground">{log.message}</p>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {log.timestamp}
+                        {new Date(log.created_at).toLocaleString()}
                       </div>
                     </div>
                   </div>
