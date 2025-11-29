@@ -2,5 +2,5 @@
   "version": 3,
   "sources": [],
   "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/ficam/Documents/GitHub/botathon-2025/app/logs/loading.tsx"],"sourcesContent":["export default function Loading() {\r\n  return null\r\n}\r\n"],"names":[],"mappings":";;;;AAAe,SAAS;IACtB,OAAO;AACT"}}]
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///var/home/nullstrik3/Hackathon/botathon-2025/app/logs/loading.tsx"],"sourcesContent":["export default function Loading() {\n  return null\n}\n"],"names":[],"mappings":";;;;AAAe,SAAS;IACtB,OAAO;AACT"}}]
 }

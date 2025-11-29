@@ -138,22 +138,51 @@ export default function ComunicacionesPage() {
       .replace(/{{campaña}}/g, selectedCampaign !== "all" ? selectedCampaign : "Teletón 2024")
   }
 
+  const createSegment = async () => {
+    const filters: any = {}
+    if (selectedRegion && selectedRegion !== "all") filters.region = selectedRegion
+    if (selectedCampaign && selectedCampaign !== "all") filters.campaign = selectedCampaign
+
+    // Create segment
+    const segment = await api.segmentation.create({ filters })
+    return segment.id
+  }
+
   const handleGenerateCommunication = async () => {
-    // Simulate sending via API
     try {
+      const segmentId = await createSegment()
+
       await api.communications.simulate({
         template_id: selectedTemplate.id,
         subject: customSubject,
         content: customContent,
-        segment_id: 0, // Mock segment ID, in real app we'd create a segment first
-        volunteer_ids: filteredVolunteers.map(v => v.id)
+        segment_id: segmentId,
       })
       setShowSuccess(true)
       setTimeout(() => {
         setShowSuccess(false)
       }, 3000)
     } catch (error) {
+      console.error("Failed to simulate communications", error)
+      alert("Error al simular comunicación")
+    }
+  }
+
+  const handleSendCommunication = async () => {
+    try {
+      const segmentId = await createSegment()
+
+      const result = await api.communications.send({
+        segment_id: segmentId,
+        template: customContent,
+        subject: customSubject
+      })
+
+      alert(`Enviado correctamente: ${result.message}`)
+      setShowPreview(false)
+    } catch (error) {
       console.error("Failed to send communications", error)
+      alert("Error al enviar comunicación")
     }
   }
 
@@ -170,7 +199,7 @@ export default function ComunicacionesPage() {
         {showSuccess && (
           <div className="fixed right-4 top-20 z-50 flex items-center gap-2 rounded-lg bg-green-500 px-4 py-3 text-white shadow-lg">
             <CheckCircle className="h-5 w-5" />
-            <span>Comunicación generada exitosamente</span>
+            <span>Simulación generada exitosamente</span>
           </div>
         )}
 
@@ -407,10 +436,7 @@ export default function ComunicacionesPage() {
               </Button>
               <Button
                 className="bg-primary hover:bg-primary/90"
-                onClick={() => {
-                  setShowPreview(false)
-                  handleGenerateCommunication()
-                }}
+                onClick={handleSendCommunication}
               >
                 <Send className="mr-2 h-4 w-4" />
                 Enviar Comunicación

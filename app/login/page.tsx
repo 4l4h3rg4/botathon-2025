@@ -1,69 +1,91 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import Link from "next/link"
-import Image from "next/image"
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 
 export default function LoginPage() {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 dark:from-zinc-900 dark:to-zinc-950 p-4">
-            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+    const router = useRouter();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-            <Card className="w-full max-w-md relative z-10 shadow-xl border-red-100 dark:border-zinc-800">
-                <CardHeader className="space-y-1 text-center">
-                    <div className="flex justify-center mb-4">
-                        <Image
-                            src="/teleton-logo.png"
-                            alt="Teletón Chile"
-                            width={80}
-                            height={80}
-                            className="h-20 w-auto object-contain"
-                            priority
-                        />
-                    </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">Bienvenido de vuelta</CardTitle>
-                    <CardDescription>
-                        Ingresa tus credenciales para acceder a tu cuenta
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError("");
+
+        try {
+            const response = await api.auth.login({ email, password });
+
+            // Store tokens
+            localStorage.setItem("token", response.access_token);
+            localStorage.setItem("refresh_token", response.refresh_token);
+            localStorage.setItem("user", JSON.stringify(response.user));
+
+            // Redirect to dashboard
+            router.push("/");
+        } catch (err: any) {
+            console.error(err);
+            setError("Credenciales inválidas o error del servidor.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle className="text-2xl font-bold text-center">Iniciar Sesión</CardTitle>
+                    <CardDescription className="text-center">
+                        Accede al panel de administración de SADI
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="email">Correo electrónico</Label>
-                        <Input id="email" type="email" placeholder="nombre@ejemplo.com" />
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="password">Contraseña</Label>
-                            <Link
-                                href="/forgot-password"
-                                className="text-sm font-medium text-red-600 hover:text-red-500 dark:text-red-400"
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </Link>
+                <CardContent>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                <span className="block sm:inline">{error}</span>
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Correo Electrónico</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="admin@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
                         </div>
-                        <Input id="password" type="password" />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="remember" />
-                        <Label htmlFor="remember" className="text-sm font-normal text-muted-foreground">
-                            Recordar mi dispositivo
-                        </Label>
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Contraseña</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? "Cargando..." : "Ingresar"}
+                        </Button>
+                    </form>
                 </CardContent>
-                <CardFooter className="flex flex-col space-y-4">
-                    <Button className="w-full bg-red-600 hover:bg-red-700 text-white shadow-md transition-all hover:shadow-lg">
-                        Iniciar Sesión
-                    </Button>
-                    <div className="text-center text-sm text-muted-foreground">
-                        ¿No tienes una cuenta?{" "}
-                        <Link href="/register" className="font-medium text-red-600 hover:text-red-500 dark:text-red-400 underline-offset-4 hover:underline">
-                            Regístrate aquí
-                        </Link>
-                    </div>
+                <CardFooter className="justify-center">
+                    <p className="text-sm text-gray-500">
+                        ¿No tienes cuenta? Contacta al administrador.
+                    </p>
                 </CardFooter>
             </Card>
         </div>
-    )
+    );
 }

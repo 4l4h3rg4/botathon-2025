@@ -12,19 +12,50 @@ def create_segment():
         segment_in = SegmentCreate(**data)
         filters = segment_in.filters
         
-        # Calculate count of volunteers matching filters
-        query = supabase.table("volunteers").select("id", count="exact", head=True)
+        # Base query for fetching data
+        query = supabase.table("volunteers").select("id, skills(name), campaigns(name), region, availability, volunteer_type, status")
         
-        # Apply filters (simplified mapping)
+        # Apply basic filters
         if "search" in filters and filters["search"]:
-             query = query.or_(f"full_name.ilike.%{filters['search']}%,email.ilike.%{filters['search']}%")
+             query = query.or_(f"name.ilike.%{filters['search']}%,email.ilike.%{filters['search']}%")
         
-        # Note: Complex filtering (skills, campaigns) would need more logic here 
-        # similar to what we did in volunteers endpoint or using RPCs.
-        # For now, we'll trust the count from the basic query or implement basic filtering.
-        
+        if "region" in filters and filters["region"] and filters["region"] != "all":
+            query = query.eq("region", filters["region"])
+            
+        if "availability" in filters and filters["availability"]:
+            query = query.eq("availability", filters["availability"])
+            
+        if "volunteer_type" in filters and filters["volunteer_type"]:
+            query = query.eq("volunteer_type", filters["volunteer_type"])
+            
+        if "status" in filters and filters["status"]:
+            query = query.eq("status", filters["status"])
+
+        # Execute query to get candidates
         response = query.execute()
-        count = response.count
+        candidates = response.data
+        
+        # Apply complex filters in Python (Skills, Campaigns)
+        filtered_data = []
+        for volunteer in candidates:
+            match = True
+            
+            # Filter by skills
+            if "skills" in filters and filters["skills"]:
+                v_skills = [s["name"] for s in volunteer.get("skills", [])]
+                if not all(skill in v_skills for skill in filters["skills"]):
+                    match = False
+            
+            # Filter by campaign
+            if match and "campaign" in filters and filters["campaign"] and filters["campaign"] != "all":
+                v_campaigns = [c["name"] for c in volunteer.get("campaigns", [])]
+                if filters["campaign"] not in v_campaigns:
+                    match = False
+            
+            if match:
+                filtered_data.append(volunteer)
+                
+        count = len(filtered_data)
         
         # Create Segment
         new_segment_data = {
@@ -36,6 +67,15 @@ def create_segment():
         new_segment = insert_response.data[0]
         
         return jsonify(new_segment), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@segmentation_bp.route("/", methods=["GET"])
+def list_segments():
+    """List all segments."""
+    try:
+        response = supabase.table("segments").select("*").order("created_at", desc=True).execute()
+        return jsonify(response.data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

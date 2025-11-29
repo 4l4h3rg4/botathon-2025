@@ -1,9 +1,11 @@
 from flask import Blueprint, jsonify
 from app.core.client import supabase
+from app.core.security import require_role
 
 metrics_bp = Blueprint("metrics", __name__)
 
 @metrics_bp.route("/overview", methods=["GET"])
+@require_role("admin")
 def get_overview():
     """Get high-level metrics for the dashboard."""
     try:
@@ -30,6 +32,7 @@ def get_overview():
         return jsonify({"error": str(e)}), 500
 
 @metrics_bp.route("/regions", methods=["GET"])
+@require_role("admin")
 def get_regions():
     """Get volunteer distribution by region."""
     try:
@@ -49,6 +52,7 @@ def get_regions():
         return jsonify({"error": str(e)}), 500
 
 @metrics_bp.route("/skills", methods=["GET"])
+@require_role("admin")
 def get_top_skills():
     """Get top skills among volunteers."""
     try:
@@ -87,6 +91,7 @@ def get_top_skills():
         return jsonify({"error": str(e)}), 500
 
 @metrics_bp.route("/timeline", methods=["GET"])
+@require_role("admin")
 def get_timeline():
     """Get volunteer growth over time."""
     try:

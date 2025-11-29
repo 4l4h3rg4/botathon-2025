@@ -104,6 +104,34 @@ export default function BuscadorPage() {
     })
   }
 
+  const [creatingSegment, setCreatingSegment] = useState(false)
+  const [segmentId, setSegmentId] = useState<string | null>(null)
+
+  const handleCreateSegment = async () => {
+    setCreatingSegment(true)
+    try {
+      // Prepare filters for backend
+      const activeFilters = {
+        search: filters.searchTerm,
+        region: filters.region !== "all" ? filters.region : undefined,
+        skills: filters.skills.length > 0 ? filters.skills : undefined,
+        campaign: filters.campaign !== "all" ? filters.campaign : undefined,
+        availability: filters.availability !== "all" ? filters.availability : undefined,
+        volunteer_type: filters.volunteerType !== "all" ? filters.volunteerType : undefined,
+        status: filters.status !== "all" ? filters.status : undefined,
+      }
+
+      const response = await api.segmentation.create({ filters: activeFilters })
+      setSegmentId(response.id)
+      alert(`Segmento creado con éxito! ID: ${response.id}`)
+    } catch (error) {
+      console.error("Failed to create segment", error)
+      alert("Error al crear el segmento")
+    } finally {
+      setCreatingSegment(false)
+    }
+  }
+
   const clearFilters = () => {
     setFilters({
       searchTerm: "",
@@ -114,6 +142,7 @@ export default function BuscadorPage() {
       volunteerType: "",
       status: "",
     })
+    setSegmentId(null)
   }
 
   const hasActiveFilters =
@@ -418,9 +447,13 @@ export default function BuscadorPage() {
                 Resultados ({filteredVolunteers.length})
               </CardTitle>
               {filteredVolunteers.length > 0 && (
-                <Button className="bg-primary hover:bg-primary/90">
+                <Button
+                  className="bg-primary hover:bg-primary/90"
+                  onClick={handleCreateSegment}
+                  disabled={creatingSegment}
+                >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Segmentar Voluntarios
+                  {creatingSegment ? "Creando..." : "Segmentar Voluntarios"}
                 </Button>
               )}
             </div>
