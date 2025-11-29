@@ -5,39 +5,39 @@
 
 /* Updated to Teletón brand colors - Red #E00025, Yellow #FFD100 */
 :root {
-  --background: oklch(0.98 0 0);
+  --background: #ffffff;
   --foreground: oklch(0.15 0.01 250);
-  --card: oklch(1 0 0);
+  --card: #ffffff;
   --card-foreground: oklch(0.15 0.01 250);
-  --popover: oklch(1 0 0);
+  --popover: #ffffff;
   --popover-foreground: oklch(0.15 0.01 250);
-  --primary: oklch(0.5 0.22 25);
-  --primary-foreground: oklch(1 0 0);
+  --primary: #e83743;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.85 0.15 95);
   --secondary-foreground: oklch(0.15 0.01 250);
-  --muted: oklch(0.96 0 0);
+  --muted: #ffffff;
   --muted-foreground: oklch(0.45 0.01 250);
-  --accent: oklch(0.96 0 0);
+  --accent: #ffffff;
   --accent-foreground: oklch(0.15 0.01 250);
   --destructive: oklch(0.5 0.22 25);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.91 0 0);
   --input: oklch(0.91 0 0);
-  --ring: oklch(0.5 0.22 25);
-  --chart-1: oklch(0.5 0.22 25);
+  --ring: #e83743;
+  --chart-1: #e83743;
   --chart-2: oklch(0.85 0.15 95);
   --chart-3: oklch(0.45 0.01 250);
   --chart-4: oklch(0.7 0.01 250);
   --chart-5: oklch(0.6 0.18 25);
   --radius: 0.75rem;
-  --sidebar: oklch(1 0 0);
+  --sidebar: #ffffff;
   --sidebar-foreground: oklch(0.15 0.01 250);
-  --sidebar-primary: oklch(0.5 0.22 25);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.97 0.02 25);
-  --sidebar-accent-foreground: oklch(0.5 0.22 25);
+  --sidebar-primary: #e83743;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #e83743;
   --sidebar-border: oklch(0.91 0 0);
-  --sidebar-ring: oklch(0.5 0.22 25);
+  --sidebar-ring: #e83743;
 }
 
 .dark {
@@ -123,6 +123,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

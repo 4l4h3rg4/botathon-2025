@@ -1,6 +1,7 @@
 "use client"
 
 import { Bell, Search, User } from "lucide-react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,10 +19,15 @@ export function Header() {
     <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">T</span>
-          </div>
-          <span className="text-xl font-semibold text-foreground">Teletón</span>
+          <Image
+            src="/teleton-logo.png"
+            alt="Teletón Chile"
+            width={0}
+            height={0}
+            sizes="100vw"
+            className="h-10 w-auto object-contain"
+            priority
+          />
         </div>
       </div>
 
