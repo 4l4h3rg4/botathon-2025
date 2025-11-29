@@ -712,13 +712,10 @@
     height: 100%;
   }
 
-<<<<<<< HEAD
-=======
   .h-2 {
     height: calc(var(--spacing) * 2);
   }
 
->>>>>>> 26c27c42c3d4d7f28242878f470e5920f727cc46
   .h-2\.5 {
     height: calc(var(--spacing) * 2.5);
   }
@@ -831,13 +828,10 @@
     min-height: 100vh;
   }
 
-<<<<<<< HEAD
-=======
   .w-2 {
     width: calc(var(--spacing) * 2);
   }
 
->>>>>>> 26c27c42c3d4d7f28242878f470e5920f727cc46
   .w-2\.5 {
     width: calc(var(--spacing) * 2.5);
   }
@@ -1472,13 +1466,10 @@
     padding: calc(var(--spacing) * 6);
   }
 
-<<<<<<< HEAD
-=======
   .p-8 {
     padding: calc(var(--spacing) * 8);
   }
 
->>>>>>> 26c27c42c3d4d7f28242878f470e5920f727cc46
   .p-\[1px\] {
     padding: 1px;
   }

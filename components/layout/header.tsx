@@ -81,7 +81,7 @@ export function Header() {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Image
-            src="/teleton-logo.png"
+            src="/teleton-logo.svg"
             alt="Teletón Chile"
             width={0}
             height={0}
@@ -141,8 +141,8 @@ export function Header() {
                       onClick={() => !notification.read && markAsRead(notification.id)}
                     >
                       <div className={`mt-1 h-2 w-2 rounded-full ${notification.type === 'success' ? 'bg-green-500' :
-                          notification.type === 'warning' ? 'bg-yellow-500' :
-                            notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                        notification.type === 'warning' ? 'bg-yellow-500' :
+                          notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500'
                         }`} />
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium leading-none">{notification.title}</p>
@@ -163,7 +163,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/admin-user-avatar.png" />
+                <AvatarImage src="/admin-user-avatar.svg" />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">AD</AvatarFallback>
               </Avatar>
               <div className="hidden flex-col items-start md:flex">

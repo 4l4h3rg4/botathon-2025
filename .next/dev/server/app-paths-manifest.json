@@ -1,5 +1,6 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   "/_not-found/page": "app/_not-found/page.js",
   "/asistente/page": "app/asistente/page.js",
   "/buscador/page": "app/buscador/page.js",
@@ -11,4 +12,13 @@
   "/configuracion/page": "app/configuracion/page.js",
   "/login/page": "app/login/page.js"
 >>>>>>> 26c27c42c3d4d7f28242878f470e5920f727cc46
+=======
+  "/buscador/page": "app/buscador/page.js",
+  "/comunicaciones/page": "app/comunicaciones/page.js",
+  "/configuracion/page": "app/configuracion/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/voluntarios/[id]/page": "app/voluntarios/[id]/page.js",
+  "/voluntarios/page": "app/voluntarios/page.js"
+>>>>>>> 7b8a9d8d (asd)
 }
