@@ -11,6 +11,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Bot,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,11 @@ const menuItems = [
     title: "Buscador",
     href: "/buscador",
     icon: Search,
+  },
+  {
+    title: "Asistente AI",
+    href: "/asistente",
+    icon: Bot,
   },
   {
     title: "Voluntarios",
