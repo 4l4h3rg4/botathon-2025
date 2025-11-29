@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,11 +8,27 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/ui/data-table"
 import { Search, Plus, Eye, Edit, Mail, Phone, MapPin, Users } from "lucide-react"
-import { volunteers } from "@/lib/mock-data"
 import Link from "next/link"
+import { api } from "@/lib/api"
 
 export default function VoluntariosPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [volunteers, setVolunteers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchVolunteers = async () => {
+      try {
+        const data = await api.volunteers.list()
+        setVolunteers(data)
+      } catch (error) {
+        console.error("Failed to fetch volunteers", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchVolunteers()
+  }, [])
 
   const filteredVolunteers = volunteers.filter(
     (volunteer) =>
@@ -24,12 +40,12 @@ export default function VoluntariosPage() {
     {
       key: "name",
       header: "Nombre",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
             {volunteer.name
               .split(" ")
-              .map((n) => n[0])
+              .map((n: string) => n[0])
               .join("")}
           </div>
           <div>
@@ -42,7 +58,7 @@ export default function VoluntariosPage() {
     {
       key: "contact",
       header: "Contacto",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="space-y-1 text-sm">
           <div className="flex items-center gap-1 text-muted-foreground">
             <Mail className="h-3 w-3" />
@@ -58,7 +74,7 @@ export default function VoluntariosPage() {
     {
       key: "region",
       header: "Región",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex items-center gap-1 text-sm">
           <MapPin className="h-3 w-3 text-muted-foreground" />
           {volunteer.region}
@@ -68,14 +84,14 @@ export default function VoluntariosPage() {
     {
       key: "skills",
       header: "Habilidades",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex flex-wrap gap-1">
-          {volunteer.skills.slice(0, 2).map((skill) => (
-            <Badge key={skill} variant="secondary" className="text-xs">
-              {skill}
+          {volunteer.skills && volunteer.skills.slice(0, 2).map((skill: any) => (
+            <Badge key={skill.id} variant="secondary" className="text-xs">
+              {skill.name}
             </Badge>
           ))}
-          {volunteer.skills.length > 2 && (
+          {volunteer.skills && volunteer.skills.length > 2 && (
             <Badge variant="outline" className="text-xs">
               +{volunteer.skills.length - 2}
             </Badge>
@@ -84,32 +100,9 @@ export default function VoluntariosPage() {
       ),
     },
     {
-      key: "volunteerType",
-      header: "Tipo",
-      render: (volunteer: (typeof volunteers)[0]) => <Badge variant="outline">{volunteer.volunteerType}</Badge>,
-    },
-    {
-      key: "status",
-      header: "Estado",
-      render: (volunteer: (typeof volunteers)[0]) => (
-        <Badge
-          variant={volunteer.status === "Activo" ? "default" : "secondary"}
-          className={
-            volunteer.status === "Activo"
-              ? "bg-green-100 text-green-800 hover:bg-green-200"
-              : volunteer.status === "Pendiente"
-                ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                : ""
-          }
-        >
-          {volunteer.status}
-        </Badge>
-      ),
-    },
-    {
       key: "actions",
       header: "Acciones",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex items-center gap-2">
           <Link href={`/voluntarios/${volunteer.id}`}>
             <Button variant="ghost" size="sm">
@@ -152,45 +145,6 @@ export default function VoluntariosPage() {
                 <div>
                   <p className="text-2xl font-bold">{volunteers.length}</p>
                   <p className="text-sm text-muted-foreground">Total</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                  <Users className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{volunteers.filter((v) => v.status === "Activo").length}</p>
-                  <p className="text-sm text-muted-foreground">Activos</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
-                  <Users className="h-5 w-5 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{volunteers.filter((v) => v.status === "Pendiente").length}</p>
-                  <p className="text-sm text-muted-foreground">Pendientes</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{volunteers.filter((v) => v.status === "Inactivo").length}</p>
-                  <p className="text-sm text-muted-foreground">Inactivos</p>
                 </div>
               </div>
             </CardContent>

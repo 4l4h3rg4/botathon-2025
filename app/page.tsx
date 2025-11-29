@@ -1,30 +1,66 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { KpiCard } from "@/components/ui/kpi-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, MapPin, Calendar, Award, TrendingUp, Heart } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
-import { regionStats, skillsStats, campaignParticipation } from "@/lib/mock-data"
-
-const COLORS = ["#E00025", "#FFD100", "#6B7280", "#9CA3AF", "#E00025CC", "#FFD100CC", "#4B5563", "#D1D5DB"]
+import { api } from "@/lib/api"
 
 const chileRegions = [
-  { name: "Arica", lat: -18.48, lng: -70.33, volunteers: 120 },
-  { name: "Antofagasta", lat: -23.65, lng: -70.4, volunteers: 180 },
-  { name: "Copiapó", lat: -27.37, lng: -70.33, volunteers: 90 },
-  { name: "La Serena", lat: -29.9, lng: -71.25, volunteers: 200 },
-  { name: "Valparaíso", lat: -33.05, lng: -71.62, volunteers: 420 },
-  { name: "Santiago", lat: -33.45, lng: -70.67, volunteers: 1250 },
-  { name: "Rancagua", lat: -34.17, lng: -70.74, volunteers: 150 },
-  { name: "Talca", lat: -35.43, lng: -71.67, volunteers: 180 },
-  { name: "Concepción", lat: -36.83, lng: -73.05, volunteers: 380 },
-  { name: "Temuco", lat: -38.74, lng: -72.6, volunteers: 290 },
-  { name: "Puerto Montt", lat: -41.47, lng: -72.93, volunteers: 250 },
-  { name: "Punta Arenas", lat: -53.16, lng: -70.91, volunteers: 80 },
+  { name: "Arica y Parinacota", lat: -18.48, lng: -70.33 },
+  { name: "Antofagasta", lat: -23.65, lng: -70.4 },
+  { name: "Atacama", lat: -27.37, lng: -70.33 },
+  { name: "Coquimbo", lat: -29.9, lng: -71.25 },
+  { name: "Valparaíso", lat: -33.05, lng: -71.62 },
+  { name: "Metropolitana", lat: -33.45, lng: -70.67 },
+  { name: "O'Higgins", lat: -34.17, lng: -70.74 },
+  { name: "Maule", lat: -35.43, lng: -71.67 },
+  { name: "Biobío", lat: -36.83, lng: -73.05 },
+  { name: "Araucanía", lat: -38.74, lng: -72.6 },
+  { name: "Los Lagos", lat: -41.47, lng: -72.93 },
+  { name: "Magallanes", lat: -53.16, lng: -70.91 },
 ]
 
 export default function DashboardPage() {
+  const [overview, setOverview] = useState<any>(null)
+  const [regionStats, setRegionStats] = useState<any[]>([])
+  const [skillsStats, setSkillsStats] = useState<any[]>([])
+  const [timeline, setTimeline] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [ov, reg, ski, time] = await Promise.all([
+          api.metrics.overview(),
+          api.metrics.regions(),
+          api.metrics.skills(),
+          api.metrics.timeline()
+        ])
+        setOverview(ov)
+        setRegionStats(reg)
+        setSkillsStats(ski)
+        setTimeline(time)
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return <DashboardLayout><div className="p-8">Cargando dashboard...</div></DashboardLayout>
+  }
+
+  const mapRegions = chileRegions.map(r => {
+    const stat = regionStats.find((s: any) => s.region === r.name)
+    return { ...r, volunteers: stat ? stat.count : 0 }
+  })
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -38,14 +74,14 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             title="Total Voluntarios"
-            value="3,550"
+            value={overview?.total_volunteers?.toLocaleString() || "0"}
             description="Voluntarios registrados"
             icon={Users}
             trend={{ value: 12, isPositive: true }}
           />
-          <KpiCard title="Regiones Activas" value="16" description="Cobertura nacional" icon={MapPin} />
+          <KpiCard title="Regiones Activas" value={regionStats.length.toString()} description="Cobertura nacional" icon={MapPin} />
           <KpiCard title="Campañas" value="4" description="Teletón históricas" icon={Calendar} />
-          <KpiCard title="Habilidades" value="12" description="Categorías registradas" icon={Award} />
+          <KpiCard title="Habilidades" value={skillsStats.length.toString()} description="Categorías registradas" icon={Award} />
         </div>
 
         {/* Charts Row 1 */}
@@ -74,9 +110,9 @@ export default function DashboardPage() {
                     strokeWidth="1"
                   />
                   {/* Region markers */}
-                  {chileRegions.map((region, index) => {
+                  {mapRegions.map((region, index) => {
                     const y = 20 + index * 38
-                    const size = Math.max(8, Math.min(20, region.volunteers / 80))
+                    const size = Math.max(8, Math.min(20, region.volunteers / 10))
                     return (
                       <g key={region.name}>
                         <circle
@@ -84,7 +120,7 @@ export default function DashboardPage() {
                           cy={y}
                           r={size}
                           fill="#E00025"
-                          opacity={0.7 + region.volunteers / 5000}
+                          opacity={0.7 + region.volunteers / 50}
                         />
                         <text x={130} y={y + 4} fontSize="10" fill="#374151" className="font-medium">
                           {region.name}: {region.volunteers}
@@ -93,16 +129,6 @@ export default function DashboardPage() {
                     )
                   })}
                 </svg>
-              </div>
-              <div className="mt-4 flex items-center justify-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary opacity-50" />
-                  <span className="text-muted-foreground">Menor concentración</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span className="text-muted-foreground">Mayor concentración</span>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -128,7 +154,7 @@ export default function DashboardPage() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="volunteers" fill="#E00025" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill="#E00025" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -142,14 +168,14 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
-                Participación por Campaña
+                Crecimiento Mensual
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={campaignParticipation}>
+                <LineChart data={timeline}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="campaign" stroke="#6B7280" fontSize={12} />
+                  <XAxis dataKey="date" stroke="#6B7280" fontSize={12} tickFormatter={(val) => new Date(val).toLocaleDateString()} />
                   <YAxis stroke="#6B7280" fontSize={12} />
                   <Tooltip
                     contentStyle={{
@@ -157,10 +183,11 @@ export default function DashboardPage() {
                       border: "1px solid #E5E7EB",
                       borderRadius: "8px",
                     }}
+                    labelFormatter={(val) => new Date(val).toLocaleDateString()}
                   />
                   <Line
                     type="monotone"
-                    dataKey="volunteers"
+                    dataKey="count"
                     stroke="#E00025"
                     strokeWidth={3}
                     dot={{ fill: "#E00025", strokeWidth: 2, r: 6 }}
@@ -195,52 +222,6 @@ export default function DashboardPage() {
                   <Bar dataKey="count" fill="#FFD100" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Voluntarios Activos</p>
-                  <p className="text-2xl font-bold text-green-600">3,280</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Porcentaje</p>
-                  <p className="text-2xl font-bold text-foreground">92%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Nuevos este Mes</p>
-                  <p className="text-2xl font-bold text-primary">145</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Crecimiento</p>
-                  <p className="text-2xl font-bold text-green-600">+4.2%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Comunicaciones Enviadas</p>
-                  <p className="text-2xl font-bold text-foreground">2,450</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Este Mes</p>
-                  <p className="text-2xl font-bold text-secondary-foreground">+890</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

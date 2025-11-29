@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/ui/data-table"
 import { Search, Filter, X, Eye, Mail, Phone, MapPin, Sparkles } from "lucide-react"
-import { volunteers, regions, skills, campaigns, availabilityOptions, volunteerTypes } from "@/lib/mock-data"
 import Link from "next/link"
+import { api } from "@/lib/api"
 
 interface FilterState {
   searchTerm: string
@@ -36,6 +36,29 @@ export default function BuscadorPage() {
 
   const [showFilters, setShowFilters] = useState(true)
   const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([])
+  const [volunteers, setVolunteers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchVolunteers = async () => {
+      try {
+        const data = await api.volunteers.list()
+        setVolunteers(data)
+      } catch (error) {
+        console.error("Failed to fetch volunteers", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchVolunteers()
+  }, [])
+
+  // Derived data for filters
+  const regions = Array.from(new Set(volunteers.map(v => v.region))).filter(Boolean)
+  const skills = Array.from(new Set(volunteers.flatMap(v => v.skills ? v.skills.map((s: any) => s.name) : []))).filter(Boolean)
+  const campaigns = Array.from(new Set(volunteers.flatMap(v => v.campaigns ? v.campaigns.map((c: any) => c.name) : []))).filter(Boolean)
+  const availabilityOptions = Array.from(new Set(volunteers.map(v => v.availability))).filter(Boolean)
+  const volunteerTypes = ["Voluntario", "Coordinador", "Líder"] // Mock types if not in DB
 
   // Filter volunteers based on criteria
   const filteredVolunteers = volunteers.filter((volunteer) => {
@@ -44,18 +67,18 @@ export default function BuscadorPage() {
       volunteer.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       volunteer.email.toLowerCase().includes(filters.searchTerm.toLowerCase())
 
-    const matchesRegion = !filters.region || volunteer.region === filters.region
+    const matchesRegion = !filters.region || filters.region === "all" || volunteer.region === filters.region
 
     const matchesSkills =
-      filters.skills.length === 0 || filters.skills.every((skill) => volunteer.skills.includes(skill))
+      filters.skills.length === 0 || filters.skills.every((skill) => volunteer.skills && volunteer.skills.some((s: any) => s.name === skill))
 
-    const matchesCampaign = !filters.campaign || volunteer.campaigns.includes(filters.campaign)
+    const matchesCampaign = !filters.campaign || filters.campaign === "all" || (volunteer.campaigns && volunteer.campaigns.some((c: any) => c.name === filters.campaign))
 
-    const matchesAvailability = !filters.availability || volunteer.availability === filters.availability
+    const matchesAvailability = !filters.availability || filters.availability === "all" || volunteer.availability === filters.availability
 
-    const matchesType = !filters.volunteerType || volunteer.volunteerType === filters.volunteerType
+    const matchesType = !filters.volunteerType || filters.volunteerType === "all" || volunteer.volunteerType === filters.volunteerType
 
-    const matchesStatus = !filters.status || volunteer.status === filters.status
+    const matchesStatus = !filters.status || filters.status === "all" || volunteer.status === filters.status
 
     return (
       matchesSearch &&
@@ -81,6 +104,34 @@ export default function BuscadorPage() {
     })
   }
 
+  const [creatingSegment, setCreatingSegment] = useState(false)
+  const [segmentId, setSegmentId] = useState<string | null>(null)
+
+  const handleCreateSegment = async () => {
+    setCreatingSegment(true)
+    try {
+      // Prepare filters for backend
+      const activeFilters = {
+        search: filters.searchTerm,
+        region: filters.region !== "all" ? filters.region : undefined,
+        skills: filters.skills.length > 0 ? filters.skills : undefined,
+        campaign: filters.campaign !== "all" ? filters.campaign : undefined,
+        availability: filters.availability !== "all" ? filters.availability : undefined,
+        volunteer_type: filters.volunteerType !== "all" ? filters.volunteerType : undefined,
+        status: filters.status !== "all" ? filters.status : undefined,
+      }
+
+      const response = await api.segmentation.create({ filters: activeFilters })
+      setSegmentId(response.id)
+      alert(`Segmento creado con éxito! ID: ${response.id}`)
+    } catch (error) {
+      console.error("Failed to create segment", error)
+      alert("Error al crear el segmento")
+    } finally {
+      setCreatingSegment(false)
+    }
+  }
+
   const clearFilters = () => {
     setFilters({
       searchTerm: "",
@@ -91,6 +142,7 @@ export default function BuscadorPage() {
       volunteerType: "",
       status: "",
     })
+    setSegmentId(null)
   }
 
   const hasActiveFilters =
@@ -106,14 +158,14 @@ export default function BuscadorPage() {
     {
       key: "name",
       header: "Nombre",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="font-medium text-foreground">{volunteer.name}</div>
       ),
     },
     {
       key: "region",
       header: "Región",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex items-center gap-1 text-sm">
           <MapPin className="h-3 w-3 text-muted-foreground" />
           {volunteer.region}
@@ -123,7 +175,7 @@ export default function BuscadorPage() {
     {
       key: "contact",
       header: "Contacto",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="space-y-1 text-sm">
           <div className="flex items-center gap-1 text-muted-foreground">
             <Mail className="h-3 w-3" />
@@ -139,14 +191,14 @@ export default function BuscadorPage() {
     {
       key: "skills",
       header: "Habilidades",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex flex-wrap gap-1">
-          {volunteer.skills.slice(0, 2).map((skill) => (
-            <Badge key={skill} variant="secondary" className="text-xs">
-              {skill}
+          {volunteer.skills && volunteer.skills.slice(0, 2).map((skill: any) => (
+            <Badge key={skill.id} variant="secondary" className="text-xs">
+              {skill.name}
             </Badge>
           ))}
-          {volunteer.skills.length > 2 && (
+          {volunteer.skills && volunteer.skills.length > 2 && (
             <Badge variant="outline" className="text-xs">
               +{volunteer.skills.length - 2}
             </Badge>
@@ -157,19 +209,19 @@ export default function BuscadorPage() {
     {
       key: "status",
       header: "Estado",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <Badge
           variant={volunteer.status === "Activo" ? "default" : "secondary"}
           className={volunteer.status === "Activo" ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}
         >
-          {volunteer.status}
+          {volunteer.status || "Activo"}
         </Badge>
       ),
     },
     {
       key: "actions",
       header: "Acciones",
-      render: (volunteer: (typeof volunteers)[0]) => (
+      render: (volunteer: any) => (
         <div className="flex items-center gap-2">
           <Link href={`/voluntarios/${volunteer.id}`}>
             <Button variant="ghost" size="sm">
@@ -241,7 +293,7 @@ export default function BuscadorPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas las regiones</SelectItem>
-                        {regions.map((region) => (
+                        {regions.map((region: any) => (
                           <SelectItem key={region} value={region}>
                             {region}
                           </SelectItem>
@@ -262,7 +314,7 @@ export default function BuscadorPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas las campañas</SelectItem>
-                        {campaigns.map((campaign) => (
+                        {campaigns.map((campaign: any) => (
                           <SelectItem key={campaign} value={campaign}>
                             {campaign}
                           </SelectItem>
@@ -283,7 +335,7 @@ export default function BuscadorPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Cualquier disponibilidad</SelectItem>
-                        {availabilityOptions.map((option) => (
+                        {availabilityOptions.map((option: any) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
@@ -338,8 +390,8 @@ export default function BuscadorPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {skills
-                          .filter((skill) => !filters.skills.includes(skill))
-                          .map((skill) => (
+                          .filter((skill) => !filters.skills.includes(skill as string))
+                          .map((skill: any) => (
                             <SelectItem key={skill} value={skill}>
                               {skill}
                             </SelectItem>
@@ -395,9 +447,13 @@ export default function BuscadorPage() {
                 Resultados ({filteredVolunteers.length})
               </CardTitle>
               {filteredVolunteers.length > 0 && (
-                <Button className="bg-primary hover:bg-primary/90">
+                <Button
+                  className="bg-primary hover:bg-primary/90"
+                  onClick={handleCreateSegment}
+                  disabled={creatingSegment}
+                >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Segmentar Voluntarios
+                  {creatingSegment ? "Creando..." : "Segmentar Voluntarios"}
                 </Button>
               )}
             </div>
