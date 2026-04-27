@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     // Get token from localStorage if available (client-side only)

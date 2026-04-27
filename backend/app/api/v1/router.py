@@ -22,3 +22,9 @@ api_bp.register_blueprint(logs_bp, url_prefix='/logs')
 api_bp.register_blueprint(auth_bp, url_prefix='/auth')
 api_bp.register_blueprint(config_bp, url_prefix='/config')
 api_bp.register_blueprint(notifications_bp, url_prefix='/notifications')
+
+try:
+    from app.api.v1.endpoints.assistant import assistant_bp
+    api_bp.register_blueprint(assistant_bp, url_prefix='/assistant')
+except ImportError:
+    pass

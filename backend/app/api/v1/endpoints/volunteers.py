@@ -42,8 +42,8 @@ def get_volunteers():
         query = supabase.table("volunteers").select("*, skills(*), campaigns(*)")
         
         if search:
-            # ILIKE search on name or email
-            query = query.or_(f"full_name.ilike.%{search}%,email.ilike.%{search}%")
+            resp = supabase.rpc("buscar_voluntarios", {"termino": search}).execute()
+            return jsonify(resp.data)
             
         # Note: Filtering by related table (skills) is tricky in single query with Supabase-py
         # We might need to filter in memory or use !inner join if supported by the client helper

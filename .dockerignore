@@ -1,0 +1,39 @@
+# Node
+node_modules
+.next
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+backend/__pycache__
+
+# Git
+.git
+.gitignore
+
+# Env files (se pasan como variables al container)
+.env
+.env.local
+backend/.env
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.idea
+.vscode
+
+# Docker
+.dockerignore
+docker-compose.yml
+
+# Misc
+PLAN_IMPLEMENTACION.md
+README.md
+debug_db_connection.py

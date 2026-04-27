@@ -48,6 +48,9 @@ export function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem("token")
+    localStorage.removeItem("refresh_token")
+    localStorage.removeItem("user")
+    document.cookie = "auth_token=; path=/; max-age=0; SameSite=Strict"
     router.push("/login")
   }
 

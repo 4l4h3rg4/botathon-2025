@@ -29,8 +29,11 @@ class Settings(BaseSettings):
         ))
 
     # Security
-    SECRET_KEY: str = "changeme"
-    
+    SECRET_KEY: str
+
+    # Google Gemini / ADK
+    GOOGLE_API_KEY: Optional[str] = None
+
     # Blue Prism
     BLUE_PRISM_API_KEY: Optional[str] = None
 

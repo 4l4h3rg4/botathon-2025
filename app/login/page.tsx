@@ -28,6 +28,9 @@ export default function LoginPage() {
             localStorage.setItem("refresh_token", response.refresh_token);
             localStorage.setItem("user", JSON.stringify(response.user));
 
+            // Set cookie so middleware can protect routes
+            document.cookie = `auth_token=${response.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
+
             // Redirect to dashboard
             router.push("/");
         } catch (err: any) {
