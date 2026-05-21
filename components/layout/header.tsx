@@ -46,8 +46,15 @@ export function Header() {
     return () => clearInterval(interval)
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem("token")
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout()
+    } catch (error) {
+      console.error("Failed to logout", error)
+    }
+
+    localStorage.removeItem("user")
+    document.cookie = "auth_token=; path=/; max-age=0; SameSite=Strict"
     router.push("/login")
   }
 

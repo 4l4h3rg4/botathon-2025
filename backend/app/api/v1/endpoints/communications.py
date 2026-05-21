@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, Response
 from app.core.client import supabase
+from app.core.security import require_role
 import csv
 import io
 
@@ -32,6 +33,7 @@ def apply_filters(query, filters):
     return query
 
 @communications_bp.route("/simular", methods=["POST"])
+@require_role("coordinator")
 def simulate_communication():
     """
     Preview communication for a segment.
@@ -84,6 +86,7 @@ def simulate_communication():
         return jsonify({"error": str(e)}), 500
 
 @communications_bp.route("/<int:segment_id>/generar-csv", methods=["GET"])
+@require_role("coordinator")
 def generate_csv(segment_id):
     try:
         template = request.args.get("template", "") or request.args.get("content", "")
@@ -131,6 +134,7 @@ def generate_csv(segment_id):
 from app.services.email_service import send_email
 
 @communications_bp.route("/enviar", methods=["POST"])
+@require_role("coordinator")
 def send_communications():
     """
     Send emails to a segment.

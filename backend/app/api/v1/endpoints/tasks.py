@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.core.client import supabase
+from app.core.security import require_role
 from app.schemas.task import TaskCreate, TaskResponse
 
 tasks_bp = Blueprint("tasks", __name__)
 
 @tasks_bp.route("/", methods=["POST"])
+@require_role(("coordinator", "worker"))
 def create_task():
     """
     Create a new task.
@@ -26,6 +28,7 @@ def create_task():
         return jsonify({"error": str(e)}), 400
 
 @tasks_bp.route("/<int:task_id>", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def get_task(task_id):
     """
     Get task status.

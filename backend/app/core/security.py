@@ -8,8 +8,7 @@ from app.core.config import settings
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 ALGORITHM = "HS256"
-# We need a secret key. I'll add it to settings later or use a default for now.
-SECRET_KEY = getattr(settings, "SECRET_KEY", "supersecretkey") 
+SECRET_KEY = settings.SECRET_KEY
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
@@ -51,20 +50,46 @@ def decode_token(token: str) -> dict:
 from functools import wraps
 from flask import request, jsonify
 
-def require_role(role: str):
+AUTH_COOKIE_NAME = "auth_token"
+REFRESH_COOKIE_NAME = "refresh_token"
+
+def _get_bearer_token() -> Optional[str]:
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        try:
+            token_type, token = auth_header.split()
+            if token_type.lower() != "bearer":
+                raise ValueError("Invalid token type")
+            return token
+        except ValueError:
+            return None
+
+    return request.cookies.get(AUTH_COOKIE_NAME)
+
+def require_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = _get_bearer_token()
+        if not token:
+            return jsonify({"error": "Missing Authorization token"}), 401
+
+        payload = decode_token(token)
+        if not payload:
+            return jsonify({"error": "Invalid or expired token"}), 401
+
+        if payload.get("type") != "access":
+            return jsonify({"error": "Invalid token type"}), 401
+
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_role(role: Union[str, list[str], tuple[str, ...]]):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            auth_header = request.headers.get("Authorization")
-            if not auth_header:
-                return jsonify({"error": "Missing Authorization header"}), 401
-            
-            try:
-                token_type, token = auth_header.split()
-                if token_type.lower() != "bearer":
-                    raise ValueError("Invalid token type")
-            except ValueError:
-                return jsonify({"error": "Invalid Authorization header format"}), 401
+            token = _get_bearer_token()
+            if not token:
+                return jsonify({"error": "Missing Authorization token"}), 401
             
             payload = decode_token(token)
             if not payload:
@@ -73,8 +98,9 @@ def require_role(role: str):
             if payload.get("type") != "access":
                 return jsonify({"error": "Invalid token type"}), 401
                 
+            allowed_roles = {role} if isinstance(role, str) else set(role)
             user_role = payload.get("role")
-            if user_role != role and user_role != "admin": # Admin can access everything
+            if user_role not in allowed_roles and user_role != "admin": # Admin can access everything
                 return jsonify({"error": "Insufficient permissions"}), 403
                 
             return f(*args, **kwargs)

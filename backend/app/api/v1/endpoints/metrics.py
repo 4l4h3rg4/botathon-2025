@@ -11,19 +11,19 @@ def get_overview():
     try:
         # Total Volunteers
         print("Fetching total volunteers...")
-        volunteers_response = supabase.table("volunteers").select("id", count="exact", head=True).execute()
+        volunteers_response = supabase.table("volunteers").select("id", count="exact").execute()
         total_volunteers = volunteers_response.count
         print(f"Total volunteers: {total_volunteers}")
 
         # Active Campaigns (assuming we count all for now, or filter by status if added later)
         print("Fetching active campaigns...")
-        campaigns_response = supabase.table("campaigns").select("id", count="exact", head=True).execute()
+        campaigns_response = supabase.table("campaigns").select("id", count="exact").execute()
         active_campaigns = campaigns_response.count
         print(f"Active campaigns: {active_campaigns}")
 
         # Messages Sent (from logs or a future messages table)
         # For now, using a placeholder or counting logs of type 'communication'
-        # logs_response = supabase.table("logs").select("id", count="exact", head=True).eq("source", "communication").execute()
+        # logs_response = supabase.table("logs").select("id", count="exact").eq("source", "communication").execute()
         messages_sent = 0 # logs_response.count
         
         return jsonify({
@@ -43,17 +43,8 @@ def get_overview():
 def get_regions():
     """Get volunteer distribution by region."""
     try:
-        # Supabase doesn't support 'GROUP BY' easily in the JS/Python client without RPC.
-        # Fetching all regions and aggregating in Python (efficient enough for hackathon size).
-        response = supabase.table("volunteers").select("region").execute()
-        data = response.data
-        
-        region_counts = {}
-        for row in data:
-            region = row.get("region") or "Unknown"
-            region_counts[region] = region_counts.get(region, 0) + 1
-            
-        result = [{"region": k, "count": v} for k, v in region_counts.items()]
+        response = supabase.rpc("get_volunteer_metrics_by_region").execute()
+        result = [{"region": r["region"], "count": r["total"]} for r in response.data]
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -4,6 +4,12 @@ from app.core.security import require_role
 
 config_bp = Blueprint("config", __name__)
 
+SECRET_CONFIG_KEYS = {"gmail_token", "api_key", "token", "secret", "password"}
+
+def _is_secret_key(key: str) -> bool:
+    lowered = key.lower()
+    return any(secret in lowered for secret in SECRET_CONFIG_KEYS)
+
 @config_bp.route("/", methods=["GET"])
 @require_role("admin")
 def get_config():
@@ -13,7 +19,10 @@ def get_config():
         data = response.data
         
         # Convert list of kv pairs to a single dict
-        config_dict = {item["key"]: item["value"] for item in data}
+        config_dict = {
+            item["key"]: ("********" if _is_secret_key(item["key"]) and item["value"] else item["value"])
+            for item in data
+        }
         return jsonify(config_dict)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -27,6 +36,9 @@ def update_config():
         
         updated_configs = []
         for key, value in data.items():
+            if value == "********":
+                continue
+
             # Upsert each key-value pair
             response = supabase.table("configurations").upsert({
                 "key": key,

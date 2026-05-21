@@ -18,11 +18,14 @@ def test_auth():
         "full_name": "Test User",
         "role": "admin"
     }
-    resp = requests.post(f"{BASE_URL}/register", json=payload)
+    session = requests.Session()
+    resp = session.post(f"{BASE_URL}/register", json=payload)
     if resp.status_code != 201:
         print(f"Register failed: {resp.status_code} - {resp.text}")
         return
-    print("Register successful:", resp.json())
+    user = resp.json()
+    assert user["role"] == "worker"
+    print("Register successful:", user)
     
     # 2. Login
     print("\n2. Logging in...")
@@ -30,29 +33,24 @@ def test_auth():
         "email": email,
         "password": password
     }
-    resp = requests.post(f"{BASE_URL}/login", json=login_payload)
+    resp = session.post(f"{BASE_URL}/login", json=login_payload)
     if resp.status_code != 200:
         print(f"Login failed: {resp.status_code} - {resp.text}")
         return
         
     data = resp.json()
     print("Login successful!")
-    print(f"Access Token: {data.get('access_token')[:20]}...")
-    print(f"Refresh Token: {data.get('refresh_token')[:20]}...")
+    print("Auth cookies set:", "auth_token" in session.cookies, "refresh_token" in session.cookies)
     
     # 3. Refresh
     print("\n3. Refreshing token...")
-    refresh_payload = {
-        "refresh_token": data.get("refresh_token")
-    }
-    resp = requests.post(f"{BASE_URL}/refresh", json=refresh_payload)
+    resp = session.post(f"{BASE_URL}/refresh", json={})
     if resp.status_code != 200:
         print(f"Refresh failed: {resp.status_code} - {resp.text}")
         return
         
-    new_data = resp.json()
     print("Refresh successful!")
-    print(f"New Access Token: {new_data.get('access_token')[:20]}...")
+    print("Auth cookie refreshed:", "auth_token" in session.cookies)
     
     print("\nSUCCESS: Auth flow verified!")
 

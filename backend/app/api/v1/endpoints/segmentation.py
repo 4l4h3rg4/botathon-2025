@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.core.client import supabase
+from app.core.security import require_role
 from app.schemas.segment import SegmentCreate, SegmentResponse
 
 segmentation_bp = Blueprint("segmentation", __name__)
 
 @segmentation_bp.route("/", methods=["POST"])
+@require_role(("coordinator", "worker"))
 def create_segment():
     """Create a new segment based on filters."""
     try:
@@ -71,6 +73,7 @@ def create_segment():
         return jsonify({"error": str(e)}), 500
 
 @segmentation_bp.route("/", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def list_segments():
     """List all segments."""
     try:
@@ -80,6 +83,7 @@ def list_segments():
         return jsonify({"error": str(e)}), 500
 
 @segmentation_bp.route("/<int:segment_id>", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def get_segment(segment_id):
     """Get a segment by ID."""
     try:

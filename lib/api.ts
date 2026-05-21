@@ -1,21 +1,15 @@
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-    // Get token from localStorage if available (client-side only)
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...options.headers as Record<string, string>,
     };
 
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-    }
-
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: "include",
     });
 
     if (!res.ok) {
@@ -33,7 +27,8 @@ export const api = {
     auth: {
         login: (data: any) => fetchAPI("/auth/login", { method: "POST", body: JSON.stringify(data) }),
         register: (data: any) => fetchAPI("/auth/register", { method: "POST", body: JSON.stringify(data) }),
-        refresh: (token: string) => fetchAPI("/auth/refresh", { method: "POST", body: JSON.stringify({ refresh_token: token }) }),
+        refresh: () => fetchAPI("/auth/refresh", { method: "POST", body: JSON.stringify({}) }),
+        logout: () => fetchAPI("/auth/logout", { method: "POST" }),
     },
     volunteers: {
         list: (params?: any) => {

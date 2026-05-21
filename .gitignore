@@ -4,3 +4,7 @@ __pycache__
 .env
 .venv
 *.pyc
+debug_db_connection.py
+test_mcp_client.py
+backend/test_db.py
+.claude

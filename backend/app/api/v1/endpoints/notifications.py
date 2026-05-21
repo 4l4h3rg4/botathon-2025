@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from app.core.client import supabase
+from app.core.security import require_role
 
 notifications_bp = Blueprint("notifications", __name__)
 
 @notifications_bp.route("/", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def get_notifications():
     """Get all notifications, ordered by created_at desc."""
     try:
@@ -14,6 +16,7 @@ def get_notifications():
         return jsonify({"error": str(e)}), 500
 
 @notifications_bp.route("/<uuid:notification_id>/read", methods=["PATCH"])
+@require_role(("coordinator", "worker"))
 def mark_as_read(notification_id):
     """Mark a notification as read."""
     try:
@@ -23,6 +26,7 @@ def mark_as_read(notification_id):
         return jsonify({"error": str(e)}), 500
         
 @notifications_bp.route("/mark-all-read", methods=["POST"])
+@require_role(("coordinator", "worker"))
 def mark_all_read():
     """Mark all notifications as read."""
     try:

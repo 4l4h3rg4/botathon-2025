@@ -1,10 +1,44 @@
+import os
 from flask import Blueprint, request, jsonify
 from app.core.client import supabase
-from app.core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_token
+from app.core.security import (
+    AUTH_COOKIE_NAME,
+    REFRESH_COOKIE_NAME,
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+)
 from app.schemas.auth import UserCreate, UserLogin, UserResponse, Token
 from pydantic import ValidationError
 
 auth_bp = Blueprint("auth", __name__)
+
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Strict")
+
+def _set_auth_cookies(response, access_token: str, refresh_token: str | None = None):
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        access_token,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        max_age=60 * 30,
+        path="/",
+    )
+    if refresh_token:
+        response.set_cookie(
+            REFRESH_COOKIE_NAME,
+            refresh_token,
+            httponly=True,
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+            max_age=60 * 60 * 24 * 7,
+            path="/",
+        )
+    return response
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -25,7 +59,7 @@ def register():
             "email": user_in.email,
             "password_hash": hashed_pw,
             "full_name": user_in.full_name,
-            "role": user_in.role
+            "role": "worker"
         }
         
         response = supabase.table("users").insert(user_data).execute()
@@ -62,9 +96,7 @@ def login():
         access_token = create_access_token(data={"sub": user["email"], "role": user["role"], "id": user["id"]})
         refresh_token = create_refresh_token(data={"sub": user["email"], "role": user["role"], "id": user["id"]})
         
-        return jsonify({
-            "access_token": access_token,
-            "refresh_token": refresh_token,
+        response = jsonify({
             "token_type": "bearer",
             "user": {
                 "id": user["id"],
@@ -73,6 +105,7 @@ def login():
                 "role": user["role"]
             }
         })
+        return _set_auth_cookies(response, access_token, refresh_token)
         
     except ValidationError as e:
         return jsonify({"error": e.errors()}), 422
@@ -82,8 +115,8 @@ def login():
 @auth_bp.route("/refresh", methods=["POST"])
 def refresh_token():
     try:
-        data = request.get_json()
-        refresh_token = data.get("refresh_token")
+        data = request.get_json(silent=True) or {}
+        refresh_token = data.get("refresh_token") or request.cookies.get(REFRESH_COOKIE_NAME)
         
         if not refresh_token:
             return jsonify({"error": "Missing refresh token"}), 400
@@ -96,10 +129,17 @@ def refresh_token():
         # We could verify if user still exists here
         new_access_token = create_access_token(data={"sub": payload["sub"], "role": payload["role"], "id": payload["id"]})
         
-        return jsonify({
-            "access_token": new_access_token,
+        response = jsonify({
             "token_type": "bearer"
         })
+        return _set_auth_cookies(response, new_access_token)
         
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    response = jsonify({"message": "Logged out"})
+    response.delete_cookie(AUTH_COOKIE_NAME, path="/")
+    response.delete_cookie(REFRESH_COOKIE_NAME, path="/")
+    return response

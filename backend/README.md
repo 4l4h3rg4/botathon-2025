@@ -14,11 +14,16 @@ High-performance Flask backend with Supabase integration and Blue Prism support.
     ```bash
     SUPABASE_USER=postgres
     SUPABASE_PASSWORD=[YOUR_PASSWORD]
-    SUPABASE_HOST=db.mffriqwwojidkkbaulie.supabase.co
+    SUPABASE_HOST=db.[YOUR_PROJECT_ID].supabase.co
     SUPABASE_PORT=5432
     SUPABASE_DB=postgres
-    BLUE_PRISM_API_KEY=secret_key_for_bots
-    SECRET_KEY=supersecretkey
+    SUPABASE_URL=https://[YOUR_PROJECT_ID].supabase.co
+    SUPABASE_KEY=[YOUR_SUPABASE_ANON_KEY]
+    SUPABASE_SERVICE_ROLE_KEY=[YOUR_SUPABASE_SERVICE_ROLE_KEY_BACKEND_ONLY]
+    BLUE_PRISM_API_KEY=[GENERATE_A_RANDOM_API_KEY]
+    SECRET_KEY=[GENERATE_WITH_PYTHON_SECRETS_TOKEN_HEX_32]
+    COOKIE_SECURE=false
+    COOKIE_SAMESITE=Strict
     ```
 
 2.  **Install Dependencies**:

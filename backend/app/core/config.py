@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     SUPABASE_DB: str = "postgres"
     SUPABASE_URL: str
     SUPABASE_KEY: str
+    SUPABASE_SERVICE_ROLE_KEY: str
     
     @computed_field
     @property
@@ -29,8 +30,11 @@ class Settings(BaseSettings):
         ))
 
     # Security
-    SECRET_KEY: str = "changeme"
-    
+    SECRET_KEY: str
+
+    # Google Gemini / ADK
+    GOOGLE_API_KEY: Optional[str] = None
+
     # Blue Prism
     BLUE_PRISM_API_KEY: Optional[str] = None
 
