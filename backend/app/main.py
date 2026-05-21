@@ -9,7 +9,7 @@ def create_app():
 
     # Enable CORS
     ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
-    CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}})
+    CORS(app, resources={r"/api/*": {"origins": ALLOWED_ORIGINS}}, supports_credentials=True)
     
     # Register Blueprints
     app.register_blueprint(api_bp, url_prefix=settings.API_V1_STR)

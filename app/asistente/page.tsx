@@ -24,13 +24,12 @@ export default function AsistentePage() {
         setLoading(true)
 
         try {
-            const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/assistant/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(token ? { "Authorization": `Bearer ${token}` } : {})
                 },
+                credentials: "include",
                 body: JSON.stringify({ message: userMsg, session_id: sessionId.current })
             })
             const data = await res.json()

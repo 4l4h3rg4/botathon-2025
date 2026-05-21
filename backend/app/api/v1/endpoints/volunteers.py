@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.core.client import supabase
+from app.core.security import require_role
 from app.schemas.volunteer import VolunteerCreate, VolunteerUpdate
 
 volunteers_bp = Blueprint("volunteers", __name__)
 
 @volunteers_bp.route("/", methods=["POST"])
+@require_role(("coordinator", "worker"))
 def create_volunteer():
     """Create a new volunteer."""
     try:
@@ -31,6 +33,7 @@ def create_volunteer():
         return jsonify({"error": str(e)}), 400
 
 @volunteers_bp.route("/", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def get_volunteers():
     """Get all volunteers with filtering and pagination."""
     try:
@@ -69,6 +72,7 @@ def get_volunteers():
         return jsonify({"error": str(e)}), 500
 
 @volunteers_bp.route("/<string:volunteer_id>", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def get_volunteer(volunteer_id):
     """Get a single volunteer by ID."""
     try:
@@ -84,6 +88,7 @@ def get_volunteer(volunteer_id):
         return jsonify({"error": str(e)}), 500
 
 @volunteers_bp.route("/<string:volunteer_id>", methods=["PUT"])
+@require_role(("coordinator", "worker"))
 def update_volunteer(volunteer_id):
     """Update a volunteer."""
     try:

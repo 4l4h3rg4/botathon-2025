@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app.core.client import supabase
+from app.core.security import require_role
 from app.schemas.log import LogCreate, LogResponse
 
 logs_bp = Blueprint("logs", __name__)
 
 @logs_bp.route("/", methods=["POST"])
+@require_role(("coordinator", "worker"))
 def create_log():
     """Create a new system log."""
     try:
@@ -26,6 +28,7 @@ def create_log():
         return jsonify({"error": str(e)}), 400
 
 @logs_bp.route("/", methods=["GET"])
+@require_role(("coordinator", "worker"))
 def get_logs():
     """Get system logs with filtering."""
     try:

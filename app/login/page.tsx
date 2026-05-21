@@ -23,13 +23,7 @@ export default function LoginPage() {
         try {
             const response = await api.auth.login({ email, password });
 
-            // Store tokens
-            localStorage.setItem("token", response.access_token);
-            localStorage.setItem("refresh_token", response.refresh_token);
             localStorage.setItem("user", JSON.stringify(response.user));
-
-            // Set cookie so middleware can protect routes
-            document.cookie = `auth_token=${response.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`;
 
             // Redirect to dashboard
             router.push("/");
